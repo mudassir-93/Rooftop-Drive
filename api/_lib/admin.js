@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
-const cookieNames = { access: 'rd_admin_access', refresh: 'rd_admin_refresh', started: 'rd_admin_started', stage: 'rd_admin_stage' };
+const cookieNames = { access: 'rd_admin_access', refresh: 'rd_admin_refresh', started: 'rd_admin_started', idle: 'rd_admin_idle', stage: 'rd_admin_stage' };
 const authAttempts = new Map();
 
 export function config(requireService = true) {
@@ -27,12 +27,15 @@ export function readBody(req, max = 100_000) {
 
 export function requireSameOrigin(req) {
   const origin = req.headers.origin;
-  const expected = process.env.APP_ORIGIN ? process.env.APP_ORIGIN.replace(/\/$/, '') : `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}`;
+  const configured = process.env.APP_ORIGIN?.trim();
+  const production = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
+  if (production && !configured) throw Object.assign(new Error('Admin origin is not configured.'), { status: 503 });
+  const expected = configured ? configured.replace(/\/$/, '') : `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}`;
   if (!origin || origin.replace(/\/$/, '') !== expected) throw Object.assign(new Error('Request origin rejected.'), { status: 403 });
 }
 
 function cookies(req) {
-  return Object.fromEntries((req.headers.cookie || '').split(';').map(v => v.trim()).filter(Boolean).map(v => { const at = v.indexOf('='); return [v.slice(0, at), decodeURIComponent(v.slice(at + 1))]; }));
+  return Object.fromEntries((req.headers.cookie || '').split(';').map(v => v.trim()).filter(Boolean).map(v => { const at = v.indexOf('='); let value = v.slice(at + 1); try { value = decodeURIComponent(value); } catch { value = ''; } return [v.slice(0, at), value]; }));
 }
 
 function setCookie(res, name, value, maxAge) {
@@ -89,6 +92,7 @@ async function refreshSession(refreshToken) {
 function setSessionCookies(res, session, stage = 'admin', preserveStarted = false) {
   setCookie(res, cookieNames.access, session.access_token, 1800);
   setCookie(res, cookieNames.refresh, session.refresh_token, 1800);
+  setCookie(res, cookieNames.idle, encodeSessionStart(Date.now()), 1800);
   setCookie(res, cookieNames.stage, stage, 1800);
   if (!preserveStarted) setCookie(res, cookieNames.started, encodeSessionStart(Date.now()), 28800);
 }
@@ -109,8 +113,13 @@ export async function audit(user, event, target, result = 'success', metadata = 
 export async function requireAdmin(req, res) {
   const c = config(), jar = cookies(req);
   if (jar[cookieNames.stage] !== 'admin' || !jar[cookieNames.access] || !jar[cookieNames.refresh] || !jar[cookieNames.started]) throw Object.assign(new Error('Admin authentication required.'), { status: 401 });
+  const now = Date.now();
   const startedAt = decodeSessionStart(jar[cookieNames.started]);
-  if (!Number.isFinite(startedAt) || Date.now() - startedAt > 8 * 60 * 60 * 1000 || startedAt > Date.now()) throw Object.assign(new Error('Admin session expired.'), { status: 401 });
+  const lastActivityAt = decodeSessionStart(jar[cookieNames.idle]);
+  if (!Number.isFinite(startedAt) || now - startedAt > 8 * 60 * 60 * 1000 || startedAt > now ||
+      !Number.isFinite(lastActivityAt) || now - lastActivityAt > 30 * 60 * 1000 || lastActivityAt > now) {
+    throw Object.assign(new Error('Admin session expired.'), { status: 401 });
+  }
   let session = { access_token: jar[cookieNames.access], refresh_token: jar[cookieNames.refresh] };
   let identity;
   try { identity = await authUser(session.access_token); }

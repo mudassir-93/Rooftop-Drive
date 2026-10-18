@@ -16,3 +16,16 @@ supabase/.temp/
 Thumbs.db
 *.log
 npm-debug.log*
+
+# Private key and credential files (never commit deployment or provider credentials)
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+credentials.json
+client_secret*.json
+service-account*.json
+*_service_account*.json
+secrets/
