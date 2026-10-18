@@ -6,8 +6,8 @@ export default async function handler(_req, res) {
   try {
     const c = config(false);
     const [seoRes, contentRes] = await Promise.all([
-      fetch(`${c.url}/rest/v1/seo_settings?select=canonical_base_url,noindex&singleton=eq.true`, { headers: { apikey: c.anon, Authorization: `Bearer ${c.anon}` } }),
-      fetch(`${c.url}/rest/v1/site_content?select=slug,updated_at&status=eq.published`, { headers: { apikey: c.anon, Authorization: `Bearer ${c.anon}` } })
+      fetch(`${c.url}/rest/v1/seo_settings?select=canonical_base_url,noindex&singleton=eq.true`, { headers: { apikey: c.anon } }),
+      fetch(`${c.url}/rest/v1/site_content?select=slug,updated_at&status=eq.published`, { headers: { apikey: c.anon } })
     ]);
     if (!seoRes.ok || !contentRes.ok) throw new Error('Sitemap source data is unavailable.');
     const seo = (await seoRes.json())[0], pages = await contentRes.json();

@@ -4,9 +4,9 @@ export default async function handler(_req, res) {
   try {
     const c = config(false);
     const [settings, placements, integration] = await Promise.all([
-      fetch(`${c.url}/rest/v1/ad_settings?select=enabled,publisher_id&singleton=eq.true&enabled=eq.true&limit=1`, { headers: { apikey: c.anon, Authorization: `Bearer ${c.anon}` } }),
-      fetch(`${c.url}/rest/v1/ad_placements?select=placement,name,slot_id,enabled&enabled=eq.true`, { headers: { apikey: c.anon, Authorization: `Bearer ${c.anon}` } }),
-      fetch(`${c.url}/rest/v1/script_integrations?select=integration,config&integration=eq.google_adsense&enabled=eq.true&environment=eq.production&limit=1`, { headers: { apikey: c.anon, Authorization: `Bearer ${c.anon}` } })
+      fetch(`${c.url}/rest/v1/ad_settings?select=enabled,publisher_id&singleton=eq.true&enabled=eq.true&limit=1`, { headers: { apikey: c.anon } }),
+      fetch(`${c.url}/rest/v1/ad_placements?select=placement,name,slot_id,enabled&enabled=eq.true`, { headers: { apikey: c.anon } }),
+      fetch(`${c.url}/rest/v1/script_integrations?select=integration,config&integration=eq.google_adsense&enabled=eq.true&environment=eq.production&limit=1`, { headers: { apikey: c.anon } })
     ]);
     if (!settings.ok || !placements.ok || !integration.ok) return json(res, 503, { enabled: false, placements: [] });
     const setting = (await settings.json())[0];

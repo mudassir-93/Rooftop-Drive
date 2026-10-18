@@ -15,7 +15,7 @@ Build the static frontend with `npm run build` and inspect it with `npm run prev
 
 ## Admin backend setup
 
-The CMS backend requires a connected Supabase project. Before it can work, configure the server-side environment variables, apply the migration in `supabase/migrations/`, configure Supabase Auth and MFA, and provision a verified administrator. The service-role key must remain server-only and must never use a `VITE_` variable. Follow [Admin setup](docs/ADMIN_SETUP.md) and [Deployment](docs/DEPLOYMENT.md).
+The CMS backend requires a connected Supabase project. Before it can work, configure the server-side environment variables, apply the migration in `supabase/migrations/`, configure Supabase Auth and MFA, and provision a verified administrator. The Supabase secret key must remain server-only and must never use a `VITE_` variable. Follow [Admin setup](docs/ADMIN_SETUP.md) and [Deployment](docs/DEPLOYMENT.md).
 
 Real authentication, database/RLS behavior, and Vercel deployment have not been verified in this workspace. Do not treat the admin backend as configured until those external setup steps and test-project checks are complete.
 

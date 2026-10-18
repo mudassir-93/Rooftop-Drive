@@ -4,8 +4,8 @@ export default async function handler(_req, res) {
   try {
     const c = config(false);
     const [response, scripts] = await Promise.all([
-      fetch(`${c.url}/rest/v1/seo_settings?select=title,description,canonical_base_url,og_title,og_description,og_image,noindex&singleton=eq.true`, { headers: { apikey: c.anon, Authorization: `Bearer ${c.anon}` } }),
-      fetch(`${c.url}/rest/v1/script_integrations?select=integration,config&integration=eq.google_site_verification&enabled=eq.true&environment=eq.production&limit=1`, { headers: { apikey: c.anon, Authorization: `Bearer ${c.anon}` } })
+      fetch(`${c.url}/rest/v1/seo_settings?select=title,description,canonical_base_url,og_title,og_description,og_image,noindex&singleton=eq.true`, { headers: { apikey: c.anon } }),
+      fetch(`${c.url}/rest/v1/script_integrations?select=integration,config&integration=eq.google_site_verification&enabled=eq.true&environment=eq.production&limit=1`, { headers: { apikey: c.anon } })
     ]);
     if (!response.ok) return json(res, 503, { unavailable: true });
     const settings = (await response.json())[0] || null;
