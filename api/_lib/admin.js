@@ -4,7 +4,9 @@ const cookieNames = { access: 'rd_admin_access', refresh: 'rd_admin_refresh', st
 const authAttempts = new Map();
 
 export function config(requireService = true) {
-  const { SUPABASE_URL: url, SUPABASE_ANON_KEY: anon, SUPABASE_SERVICE_ROLE_KEY: service } = process.env;
+  const url = process.env.SUPABASE_URL;
+  const anon = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY;
+  const service = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !anon || (requireService && !service)) throw Object.assign(new Error('Admin backend is not configured.'), { status: 503 });
   return { url: url.replace(/\/$/, ''), anon, service };
 }
@@ -53,16 +55,22 @@ function tokenClaims(token) {
   try { return JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8')); } catch { return {}; }
 }
 
+function sessionSigningKey() {
+  const key = config().service;
+  if (!key) throw Object.assign(new Error('Admin backend is not configured.'), { status: 503 });
+  return key;
+}
+
 function encodeSessionStart(timestamp) {
   const value = String(timestamp);
-  const signature = createHmac('sha256', process.env.SUPABASE_SERVICE_ROLE_KEY).update(value).digest('base64url');
+  const signature = createHmac('sha256', sessionSigningKey()).update(value).digest('base64url');
   return `${value}.${signature}`;
 }
 
 function decodeSessionStart(value) {
   const [timestamp, signature] = String(value || '').split('.');
   if (!/^\d{13}$/.test(timestamp || '') || !signature) return NaN;
-  const expected = createHmac('sha256', process.env.SUPABASE_SERVICE_ROLE_KEY).update(timestamp).digest();
+  const expected = createHmac('sha256', sessionSigningKey()).update(timestamp).digest();
   let provided;
   try { provided = Buffer.from(signature, 'base64url'); } catch { return NaN; }
   return provided.length === expected.length && timingSafeEqual(provided, expected) ? Number(timestamp) : NaN;
@@ -99,7 +107,7 @@ function setSessionCookies(res, session, stage = 'admin', preserveStarted = fals
 
 async function dbRequest(table, query = '', { method = 'GET', body, prefer, service = true } = {}) {
   const c = config(), key = service ? c.service : c.anon;
-  const response = await fetch(`${c.url}/rest/v1/${table}${query}`, { method, headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', ...(prefer ? { Prefer: prefer } : {}), ...(method !== 'GET' ? { 'Accept-Profile': 'public', 'Content-Profile': 'public' } : {}) }, ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
+  const response = await fetch(`${c.url}/rest/v1/${table}${query}`, { method, headers: { apikey: key, 'Content-Type': 'application/json', ...(prefer ? { Prefer: prefer } : {}), ...(method !== 'GET' ? { 'Accept-Profile': 'public', 'Content-Profile': 'public' } : {}) }, ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
   const raw = await response.text();
   if (!response.ok) throw Object.assign(new Error(`Database request failed (${response.status}).`), { status: 502, detail: raw.slice(0, 500) });
   return { data: raw ? JSON.parse(raw) : null, headers: response.headers };

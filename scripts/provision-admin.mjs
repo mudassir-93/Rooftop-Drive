@@ -1,19 +1,23 @@
-const required = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'ADMIN_EMAIL'];
-const missing = required.filter(name => !process.env[name]);
+const url = process.env.SUPABASE_URL;
+const key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+const targetEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+const missing = [
+  ...(!url ? ['SUPABASE_URL'] : []),
+  ...(!key ? ['SUPABASE_SECRET_KEY (or legacy SUPABASE_SERVICE_ROLE_KEY)'] : []),
+  ...(!targetEmail ? ['ADMIN_EMAIL'] : [])
+];
 if (missing.length) {
   console.error(`Missing required environment variables: ${missing.join(', ')}`);
   process.exit(1);
 }
 
-const base = process.env.SUPABASE_URL.replace(/\/$/, '');
-const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const targetEmail = process.env.ADMIN_EMAIL.trim().toLowerCase();
-const headers = { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' };
+const base = url.replace(/\/$/, '');
+const headers = { apikey: key, 'Content-Type': 'application/json' };
 let target = null;
 
 for (let page = 1; page <= 100; page += 1) {
   const response = await fetch(`${base}/auth/v1/admin/users?page=${page}&per_page=1000`, { headers });
-  if (!response.ok) throw new Error(`Unable to list Auth users (${response.status}). Check the server-side project URL and service key.`);
+  if (!response.ok) throw new Error(`Unable to list Auth users (${response.status}). Check the server-side project URL and secret key.`);
   const data = await response.json();
   const users = data.users || [];
   target = users.find(user => user.email?.toLowerCase() === targetEmail) || null;
