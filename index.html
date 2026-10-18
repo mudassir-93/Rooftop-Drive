@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#080a0c" />
+    <meta name="description" content="A cinematic endless rooftop driving game. Steer a future electric sports car, collect energy, and see how far you can go." />
+    <meta property="og:title" content="Rooftop Drive — Electric Escape" />
+    <meta property="og:description" content="Take the night route. How far can you make it?" />
+    <meta name="robots" content="index, follow" />
+    <title>Rooftop Drive — Electric Escape</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar"><a class="brand" href="#top" aria-label="Rooftop Drive home"><span class="brand-mark">RD</span><span>ROOFTOP<span class="brand-light"> DRIVE</span></span></a><div class="edition">NIGHT RUN <i></i> 01</div><a class="sound-toggle" id="soundToggle" href="#" aria-label="Toggle sound">SOUND <span id="soundState">OFF</span></a></header>
+      <section class="game-stage" aria-label="Rooftop driving game">
+        <div id="scene" class="scene"></div>
+        <div class="scene-vignette"></div>
+        <div class="hud" id="hud" aria-live="polite">
+          <div class="hud-score"><span class="eyebrow">DISTANCE</span><strong id="score">000000</strong><span class="unit">M</span></div>
+          <div class="hud-center"><span class="live-dot"></span><span id="statusLabel">READY WHEN YOU ARE</span></div>
+          <div class="energy-meter" aria-label="Boost energy"><span class="eyebrow">BOOST ENERGY</span><div class="energy-track"><i id="energyFill"></i></div><strong id="energyValue">35%</strong></div>
+          <div class="hud-best"><span class="eyebrow">PERSONAL BEST</span><strong id="best">000000</strong></div>
+          <button class="pause-button" id="pauseButton" aria-label="Pause game" disabled><span></span><span></span></button>
+        </div>
+        <div class="overlay" id="startOverlay">
+          <div class="overlay-content">
+            <div class="kicker"><span class="rule"></span> A QUIET CITY. A LONG WAY HOME.</div>
+            <h1>THE NIGHT<br /><em>IS YOURS.</em></h1>
+            <p class="intro">One road above the city. Keep your line, catch the light, and see how far the night takes you.</p>
+            <button class="primary-button" id="startButton"><span>START DRIVING</span><span class="button-arrow">↗</span></button>
+            <div class="control-hint"><span class="keys"><kbd>←</kbd><kbd>→</kbd></span> OR <span> A</span> <span> D</span><b> STEER</b><span class="hint-divider">·</span><kbd>SPACE</kbd><b> JUMP</b><span class="hint-divider">·</span><kbd>SHIFT</kbd><b> BOOST</b></div>
+          </div>
+          <div class="overlay-foot"><span>INDEPENDENT ARCADE EXPERIENCE</span><span>01 — 03</span></div>
+        </div>
+        <div class="overlay hidden" id="pauseOverlay"><div class="overlay-content compact"><div class="kicker"><span class="rule"></span> TAKE YOUR TIME</div><h2>PAUSED<span>.</span></h2><p class="intro">The city can wait.</p><button class="primary-button" id="resumeButton"><span>KEEP DRIVING</span><span class="button-arrow">↗</span></button><button class="text-button" id="pauseRestart">RESTART RUN</button></div></div>
+        <div class="overlay hidden" id="overOverlay"><div class="overlay-content compact"><div class="kicker"><span class="rule"></span> END OF THE LINE</div><h2>RUN<br /><em>COMPLETE.</em></h2><p class="intro">The city is still out there.</p><div class="run-result"><span>DISTANCE <b id="finalScore">0 M</b></span><span>ENERGY <b id="finalOrbs">0</b></span></div><button class="primary-button" id="restartButton"><span>DRIVE AGAIN</span><span class="button-arrow">↗</span></button><button class="text-button" id="menuButton">BACK TO MENU</button></div></div>
+        <div class="mobile-controls" id="mobileControls"><button id="leftButton" aria-label="Steer left">←</button><button id="jumpButton" aria-label="Jump over a gap">JUMP</button><button id="boostButton" aria-label="Use boost energy">BOOST</button><button id="rightButton" aria-label="Steer right">→</button></div>
+        <div class="toast" id="toast" aria-live="polite"></div>
+      </section>
+      <section class="below-game"><div class="game-note"><span class="note-index">01 /</span><p><strong>Find your line.</strong> The rooftop narrows. The city keeps moving. Every run is a little different.</p></div><div class="game-stats"><div><span class="eyebrow">YOUR OBJECTIVE</span><strong>STAY ON THE ROOF</strong></div><div><span class="eyebrow">PICK UP</span><strong>ENERGY CELLS <i>✳</i></strong></div><div><span class="eyebrow">WATCH FOR</span><strong>ROADBLOCKS + GAPS</strong></div></div></section>
+      <section class="public-faq" id="publicFaq" hidden><div class="faq-heading"><span class="eyebrow">THE SHORT VERSION</span><h2>GOOD TO <em>KNOW.</em></h2><p>Answers to the questions that come up before the next run.</p></div><div class="faq-list" id="publicFaqList"></div></section>
+      <div id="ad-consent" class="ad-consent" hidden><span>Advertising is available only after you choose to allow it.</span><div><button id="adsAccept" type="button">ALLOW ADS</button><button id="adsDecline" type="button">ONLY ESSENTIALS</button></div></div>
+      <footer><span>ROOFTOP DRIVE <span class="copyright">© 2026</span></span><span>AN INDEPENDENT ARCADE GAME · NOT AFFILIATED WITH ANY AUTOMOTIVE BRAND</span><a href="#how-to-play">HOW TO PLAY ↑</a></footer>
+      <section class="sr-only" id="how-to-play"><h2>How to play Rooftop Drive</h2><p>Use the left and right arrow keys or A and D to steer. Press Space or Up to jump over roof gaps. Hold Shift or the boost button to spend stored charge for a speed boost. Collect cyan energy cells to refill boost charge. Avoid road barriers, collect energy, and travel as far as you can. Press Escape or P to pause.</p></section>
+    </main>
+    <script type="module" src="/src/boot.js"></script>
+  </body>
+</html>

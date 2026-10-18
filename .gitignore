@@ -1,0 +1,18 @@
+# Dependencies and generated build output
+node_modules/
+dist/
+coverage/
+
+# Local configuration and credentials
+.env*
+!.env.example
+.vercel/
+
+# Supabase CLI state (the migration files remain versioned)
+supabase/.temp/
+
+# Local/editor/OS files
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*

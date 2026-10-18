@@ -1,0 +1,39 @@
+# Admin control center setup
+
+## Architecture
+
+The existing Three.js rooftop game remains a Vite single-page app. Vercel serves the static bundle and Node API functions. Supabase Auth handles email/password sessions and TOTP MFA; Supabase Postgres stores pages, FAQs, revisions, site settings, SEO, ad configuration, integration configuration, and audit logs. The custom CMS was chosen over Strapi because this is a single-admin site and Vercel does not provide the persistent Node service and database Strapi needs.
+
+Admin requests are checked by the Vercel function on every operation: Supabase Auth identity, verified email, `aal2`, and an explicit `admin_profiles` role row. Database writes use a server-only service role. Public endpoints use the anon/publishable key and rely on RLS to expose published content and approved public settings only. Browser code never receives the service key. CMS body fields are plain text and are rendered with `textContent`; arbitrary HTML or JavaScript is not accepted.
+
+As checked on October 18, 2026, Vercel lists Hobby at $0 for personal, non-commercial projects and Pro at $20/month plus usage (its page includes $20 usage credit); Supabase lists Free at $0 and Pro starting at $25/month. Supabase Free projects can pause after one week of inactivity and do not include automatic backups; production availability and recovery expectations may therefore justify the paid database tier. Plan limits and prices change, so confirm them before deployment. Vercel usage, Supabase database/Auth usage, domain registration, and any advertising or consent services are separate. See [Vercel plans](https://vercel.com/pricing) and [Supabase pricing](https://supabase.com/pricing). No account or plan is configured by this repository.
+
+## Create and configure Supabase
+
+1. Create a Supabase project and set the project URL, anon/publishable key, and service-role key in Vercel project **server-side** environment settings. Set them for Production and Preview separately. Never prefix the service key with `VITE_` or put it in browser code.
+2. In the Supabase Auth settings, disable public sign-ups, require email verification, enable TOTP MFA, and set the production site URL plus exact allowed redirect/origin URLs. Use the supported password recovery flow for account recovery.
+3. If this checkout has no `supabase/config.toml`, initialize it with `npx supabase init`. Apply the committed migration with the Supabase CLI after linking the intended project: `npx supabase link --project-ref <your-project-ref>` then `npx supabase db push`. Review the target project before pushing. The migration enables RLS on all public tables, grants public reads only where needed, and keeps all writes and private records behind the service role.
+4. Create the initial account in the trusted Supabase Auth dashboard or another restricted Auth administration flow; verify its email. Set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `ADMIN_EMAIL` in a trusted local shell, then run `node scripts/provision-admin.mjs`. The script only finds an existing, verified Auth user matching the exact configured address, is idempotent, and adds the explicit admin row. Do not run it from a browser or expose the service key.
+5. Set `APP_ORIGIN` to the exact deployed origin (for example `https://example.com`) and redeploy. First sign-in requires TOTP enrollment and code verification before the API issues an admin session. A lost authenticator requires identity verification out of band, session revocation, and removal/re-enrollment through the Supabase Auth dashboard; this project does not invent recovery codes.
+
+The server uses HTTP-only, `Secure` in production, `SameSite=Strict` cookies scoped to `/api/admin`, a 30-minute idle timeout, and an 8-hour maximum session. Mutation endpoints require a same-origin `Origin`. Supabase Auth provider throttling is relied on for distributed credential limits; the in-process rate counter is only a best-effort extra because Vercel instances are ephemeral. Add provider/firewall rate rules for production before making the admin public.
+
+## Local development and deployment
+
+Install dependencies with `npm install`, copy `.env.example` to `.env.local`, fill in local test project values, then run `npm run dev`. Vite alone serves the public game and admin shell but does not execute Vercel API functions. For end-to-end local API testing use the Vercel CLI (`npx vercel dev`) with the same local-only environment variables. Never use production service credentials in an untrusted machine.
+
+Import the repository into Vercel, use the Vite preset, `npm run build`, and `dist`. Configure the environment variables above, deploy a preview, then verify the game and API behavior before production. Vercel rewrites `/admin/*`, public CMS slugs, `/robots.txt`, and `/sitemap.xml`; response headers add a restrictive CSP and standard browser protections. The CSP permits only the two supported integrations and is intentionally not an arbitrary script execution system.
+
+## CMS, SEO, advertising, and scripts
+
+Use `/admin/content` for plain-text public pages (`/about`, `/privacy-policy`, and similar); drafts are excluded from public reads and the sitemap. Use `/admin/faq` to publish and order FAQs. Each edit snapshots the previous page version; the history panel can restore it, first preserving the current version. Public APIs are uncached or use short five-minute caching for robots/sitemap, so publication is visible without a Vite redeploy.
+
+The script registry supports Google AdSense identifiers and Google Search Console verification metadata only. It stores no executable JavaScript. Both provider integrations are fixed to the document head; other placement choices are not implemented and are rejected by the server. Configure an integration in Preview first; production enablement requires the confirmation checkbox. Ad delivery also requires matching enabled AdSense manager/integration settings, valid slots, and visitor consent. The Vercel CSP allowlists only the expected Google ad network hosts; verify CSP reports and actual ad loading against the real publisher account before production. This consent banner is a basic opt-in and is not a substitute for jurisdiction-specific consent/legal review. Saving configuration does not guarantee publisher approval, ad delivery, or revenue. Keep ads away from gameplay controls.
+
+SEO settings remain `noindex` by default until a production canonical domain is saved. The sitemap is generated from published CMS pages on request and can also be checked from the admin console. Because the public site is a Vite SPA, its metadata is updated in the browser; search engines that do not execute JavaScript may not see CMS metadata in the initial HTML. Use prerendering/server rendering if SEO for individual CMS pages is a production requirement.
+
+The configuration export intentionally excludes provider secrets, authenticator data, verification tokens, and session credentials. It is a download-only backup; a general-purpose restore-import endpoint is not exposed. Page and approved integration revisions can be restored with pre-restore snapshots. Keep database backups with Supabase's supported backup facilities as well.
+
+## Verification and limits
+
+`npm run build` checks the production frontend bundle. `node --check` can check syntax of API functions, but real login, MFA, RLS, CRUD, sitemap, and provisioning tests require a connected Supabase project and Vercel function runtime. Those flows must be exercised against a dedicated test project before production; this repository does not ship demo credentials or claim remote tests that have not run.
