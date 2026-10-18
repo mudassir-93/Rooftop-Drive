@@ -30,9 +30,10 @@ export function readBody(req, max = 100_000) {
 export function requireSameOrigin(req) {
   const origin = req.headers.origin;
   const configured = process.env.APP_ORIGIN?.trim();
-  const production = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
+  const previewOrigin = process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null;
+  const production = process.env.VERCEL_ENV === 'production' || (!process.env.VERCEL_ENV && process.env.NODE_ENV === 'production');
   if (production && !configured) throw Object.assign(new Error('Admin origin is not configured.'), { status: 503 });
-  const expected = configured ? configured.replace(/\/$/, '') : `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}`;
+  const expected = configured ? configured.replace(/\/$/, '') : previewOrigin || `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}`;
   if (!origin || origin.replace(/\/$/, '') !== expected) throw Object.assign(new Error('Request origin rejected.'), { status: 403 });
 }
 
