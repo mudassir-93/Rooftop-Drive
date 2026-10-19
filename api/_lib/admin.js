@@ -81,7 +81,14 @@ async function authRequest(path, { method = 'GET', body, token, anon } = {}) {
   const c = config();
   const response = await fetch(`${c.url}/auth/v1/${path}`, { method, headers: { apikey: anon || c.anon, 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw Object.assign(new Error(data.msg || data.message || 'Authentication request failed.'), { status: response.status, authError: true });
+  if (!response.ok) {
+    const message = [data.msg, data.message, data.error_description, typeof data.error === 'string' ? data.error : data.error?.message]
+      .find(value => typeof value === 'string' && value.trim());
+    const code = typeof data.error_code === 'string' ? data.error_code : typeof data.code === 'string' ? data.code : '';
+    const detail = message ? message.trim().replace(/[\\u0000-\\u001f\\u007f]/g, ' ').slice(0, 240) : '';
+    const diagnostic = detail || `Authentication request failed${code ? ` (${code})` : ''}.`;
+    throw Object.assign(new Error(diagnostic), { status: response.status, authError: true, authCode: code });
+  }
   return data;
 }
 
