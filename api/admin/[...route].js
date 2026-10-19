@@ -33,7 +33,7 @@ async function enroll(req, res) {
   if ((factors.factors || []).some(f => f.factor_type === 'totp' && f.status === 'verified')) return json(res, 409, { error: 'A verified authenticator is already configured. Sign in again.' });
   for (const factor of (factors.factors || []).filter(f => f.factor_type === 'totp' && f.status !== 'verified')) await supabaseAuth(`factors/${encodeURIComponent(factor.id)}`, { method: 'DELETE', token: pre.access_token }).catch(() => {});
   const enrolled = await supabaseAuth('factors', { method: 'POST', token: pre.access_token, body: { factor_type: 'totp', friendly_name: 'Rooftop admin authenticator' } });
-  return json(res, 200, { factorId: enrolled.id, qrCode: enrolled.totp?.qr_code, uri: enrolled.totp?.uri, email: identity.user.email });
+  return json(res, 200, { factorId: enrolled.id, qrCode: enrolled.totp?.qr_code, uri: enrolled.totp?.uri, secret: enrolled.totp?.secret, email: identity.user.email });
 }
 
 async function verifyMfa(req, res) {
